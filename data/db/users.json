@@ -1,0 +1,11 @@
+[
+  {
+    "id": "usr_admin_01",
+    "username": "admin",
+    "password": "123123",
+    "role": "admin",
+    "settings": {
+      "defaultQuestionCount": 10
+    }
+  }
+]

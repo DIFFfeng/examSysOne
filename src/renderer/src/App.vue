@@ -1,24 +1,60 @@
 <script setup>
-import Versions from './components/Versions.vue'
+// App.vue - 应用程序根组件
+import { onMounted } from 'vue'
+import { useUserStore } from './stores/user'
+import { useRouter } from 'vue-router'
 
-const ipcHandle = () => window.electron.ipcRenderer.send('ping')
+// 获取用户存储和路由器
+const userStore = useUserStore()
+const router = useRouter()
+
+// 在组件挂载时恢复用户会话
+onMounted(() => {
+  // 尝试从本地存储恢复用户会话
+  const user = userStore.restoreUser()
+  console.log('App.vue - 恢复用户会话:', user)
+  
+  // 如果成功恢复用户会话，根据用户角色重定向到对应页面
+  if (user && router.currentRoute.value.path === '/login') {
+    console.log('App.vue - 用户已登录，重定向到对应页面')
+    if (user.role === 'admin') {
+      console.log('App.vue - 重定向到管理员页面')
+      router.push('/admin/dashboard')
+    } else {
+      console.log('App.vue - 重定向到考生页面')
+      router.push('/candidate/exam')
+    }
+  }
+})
 </script>
 
 <template>
-  <img alt="logo" class="logo" src="./assets/electron.svg" />
-  <div class="creator">Powered by electron-vite</div>
-  <div class="text">
-    Build an app with
-    <span class="vue">AlphaWan</span>
+  <div class="app-container">
+    <!-- 路由视图 -->
+    <router-view v-slot="{ Component }">
+      <transition name="fade" mode="out-in">
+        <component :is="Component" />
+      </transition>
+    </router-view>
   </div>
-  <p class="tip">Please try pressing <code>F12</code> to open the devTool</p>
-  <div class="actions">
-    <div class="action">
-      <a href="https://electron-vite.org/" target="_blank" rel="noreferrer">Documentation</a>
-    </div>
-    <div class="action">
-      <a target="_blank" rel="noreferrer" @click="ipcHandle">Send IPC</a>
-    </div>
-  </div>
-  <Versions />
 </template>
+
+<style>
+/* 应用程序根样式 */
+.app-container {
+  width: 100%;
+  height: 100vh;
+  overflow: hidden;
+}
+
+/* 页面过渡动画 */
+.fade-enter-active,
+.fade-leave-active {
+  transition: opacity 0.3s ease;
+}
+
+.fade-enter-from,
+.fade-leave-to {
+  opacity: 0;
+}
+</style>

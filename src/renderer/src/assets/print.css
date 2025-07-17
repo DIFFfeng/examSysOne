@@ -1,0 +1,142 @@
+/* 打印样式 */
+@media print {
+  /* 基础打印设置 */
+  @page {
+    size: A4;
+    margin: 1cm;
+  }
+  
+  body {
+    background: white !important;
+    color: black !important;
+    font-size: 12pt;
+    line-height: 1.5;
+    margin: 0;
+    padding: 0;
+  }
+  
+  /* 隐藏不需要打印的元素 */
+  .no-print,
+  button,
+  .btn,
+  nav,
+  header:not(.print-header),
+  footer:not(.print-footer) {
+    display: none !important;
+  }
+  
+  /* 显示仅打印时可见的元素 */
+  .print-only {
+    display: block !important;
+  }
+  
+  /* 确保内容不会被截断 */
+  .page-break {
+    page-break-before: always;
+  }
+  
+  .avoid-break {
+    page-break-inside: avoid;
+  }
+  
+  /* 移除阴影和背景色 */
+  .card,
+  .container,
+  .question-item,
+  .exam-header,
+  .exam-footer {
+    box-shadow: none !important;
+    border: 1px solid #ddd;
+    background-color: white !important;
+  }
+  
+  /* 试卷标题样式 */
+  .exam-title {
+    font-size: 18pt;
+    font-weight: bold;
+    text-align: center;
+    margin-bottom: 20px;
+  }
+  
+  /* 考生信息样式 */
+  .candidate-info {
+    margin-bottom: 20px;
+    border: 1px solid #ddd;
+    padding: 10px;
+  }
+  
+  .candidate-info-row {
+    display: flex;
+    margin-bottom: 10px;
+  }
+  
+  .candidate-info-label {
+    width: 100px;
+    font-weight: bold;
+  }
+  
+  /* 题目样式 */
+  .question-list {
+    margin-top: 20px;
+  }
+  
+  .question-item {
+    margin-bottom: 20px;
+    page-break-inside: avoid;
+  }
+  
+  .question-header {
+    font-weight: bold;
+    margin-bottom: 10px;
+  }
+  
+  .question-content {
+    margin-bottom: 10px;
+  }
+  
+  .question-image {
+    max-width: 100%;
+    height: auto;
+    margin: 10px 0;
+  }
+  
+  /* 评分区域 */
+  .score-area {
+    border: 1px solid #ddd;
+    padding: 10px;
+    margin-top: 10px;
+  }
+  
+  .score-label {
+    font-weight: bold;
+  }
+  
+  .score-input {
+    border: 1px solid #ddd;
+    padding: 5px;
+    width: 60px;
+    text-align: center;
+  }
+  
+  /* 总分区域 */
+  .total-score {
+    margin-top: 20px;
+    text-align: right;
+    font-weight: bold;
+    font-size: 14pt;
+  }
+  
+  /* 签名区域 */
+  .signature-area {
+    margin-top: 30px;
+    display: flex;
+    justify-content: space-between;
+  }
+  
+  .signature-line {
+    border-top: 1px solid #000;
+    width: 200px;
+    margin-top: 30px;
+    text-align: center;
+  }
+}
