@@ -6,6 +6,7 @@
 import fs from 'fs'
 import path from 'path'
 import crypto from 'crypto'
+import DataFileInitializer from './dataInitializer.js'
 
 // 应用根目录路径
 let APP_ROOT = ''
@@ -24,56 +25,21 @@ const DATA_DIR = path.join(APP_ROOT, 'data')
 const DB_DIR = path.join(DATA_DIR, 'db')
 const IMAGES_DIR = path.join(DATA_DIR, 'images')
 
-// 确保数据目录存在
+// 确保数据目录存在 - 使用新的初始化模块
 function ensureDirectoriesExist() {
-  const dirs = [DATA_DIR, DB_DIR, IMAGES_DIR]
-  
-  dirs.forEach(dir => {
-    if (!fs.existsSync(dir)) {
-      fs.mkdirSync(dir, { recursive: true })
-    }
-  })
+  DataFileInitializer.ensureDirectoriesExist()
 }
 
-// 初始化数据文件
+// 初始化数据文件 - 使用新的初始化模块
 function initDataFiles() {
-  const dataFiles = [
-    { path: path.join(DB_DIR, 'users.json'), defaultContent: '[]' },
-    { path: path.join(DB_DIR, 'projects.json'), defaultContent: '[]' },
-    { path: path.join(DB_DIR, 'questions.json'), defaultContent: '[]' },
-    { path: path.join(DB_DIR, 'candidates.json'), defaultContent: '[]' }
-  ]
-  
-  dataFiles.forEach(file => {
-    if (!fs.existsSync(file.path)) {
-      fs.writeFileSync(file.path, file.defaultContent, 'utf8')
+  const result = DataFileInitializer.initializeAllDataFiles()
+  if (!result.success) {
+    console.error('数据文件初始化失败:', result.failed)
+    // 尝试修复损坏的文件
+    const repairResult = DataFileInitializer.repairCorruptedFiles()
+    if (!repairResult.success) {
+      console.error('数据文件修复失败:', repairResult.failed)
     }
-  })
-  
-  // 初始化默认管理员账户
-  const usersPath = path.join(DB_DIR, 'users.json')
-  let users = []
-  
-  try {
-    const usersData = fs.readFileSync(usersPath, 'utf8')
-    users = JSON.parse(usersData)
-  } catch (error) {
-    users = []
-  }
-  
-  // 如果没有管理员账户，创建默认账户
-  if (!users.some(user => user.role === 'admin')) {
-    users.push({
-      id: 'usr_admin_01',
-      username: 'admin',
-      password: '123123', // 实际生产环境应该加密
-      role: 'admin',
-      settings: {
-        defaultQuestionCount: 10
-      }
-    })
-    
-    fs.writeFileSync(usersPath, JSON.stringify(users, null, 2), 'utf8')
   }
 }
 
@@ -90,8 +56,21 @@ function readJsonFile(fileName) {
       return []
     }
     
-    const data = fs.readFileSync(filePath, 'utf8')
-    return JSON.parse(data)
+    const fileContent = fs.readFileSync(filePath, 'utf8')
+    const parsedData = JSON.parse(fileContent)
+    
+    // 如果是新的数据结构格式（包含version和data字段），返回data数组
+    if (parsedData && typeof parsedData === 'object' && parsedData.data && Array.isArray(parsedData.data)) {
+      return parsedData.data
+    }
+    
+    // 如果是旧的数据格式（直接是数组），直接返回
+    if (Array.isArray(parsedData)) {
+      return parsedData
+    }
+    
+    // 其他情况返回空数组
+    return []
   } catch (error) {
     console.error(`读取文件 ${fileName} 失败:`, error)
     return []
@@ -111,8 +90,41 @@ function writeJsonFile(fileName, data) {
     // 确保目录存在
     ensureDirectoriesExist()
     
+    // 读取现有文件以保持版本信息和结构
+    let fileStructure = {
+      version: "1.0.0",
+      lastUpdated: new Date().toISOString(),
+      data: []
+    }
+    
+    if (fs.existsSync(filePath)) {
+      try {
+        const existingContent = fs.readFileSync(filePath, 'utf8')
+        const existingData = JSON.parse(existingContent)
+        
+        // 如果现有文件是新格式，保持其结构
+        if (existingData && typeof existingData === 'object' && existingData.version) {
+          fileStructure = {
+            ...existingData,
+            lastUpdated: new Date().toISOString(),
+            data: Array.isArray(data) ? data : [data]
+          }
+        } else {
+          // 如果是旧格式，转换为新格式
+          fileStructure.data = Array.isArray(data) ? data : [data]
+        }
+      } catch (error) {
+        // 如果读取失败，使用默认结构
+        console.warn(`读取现有文件失败，使用默认结构: ${error.message}`)
+        fileStructure.data = Array.isArray(data) ? data : [data]
+      }
+    } else {
+      // 新文件，使用传入的数据
+      fileStructure.data = Array.isArray(data) ? data : [data]
+    }
+    
     // 格式化JSON，使用2个空格缩进，便于人类阅读
-    const jsonString = JSON.stringify(data, null, 2)
+    const jsonString = JSON.stringify(fileStructure, null, 2)
     fs.writeFileSync(filePath, jsonString, 'utf8')
     return true
   } catch (error) {
